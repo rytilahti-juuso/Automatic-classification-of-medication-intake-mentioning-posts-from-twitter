@@ -46,9 +46,8 @@ for i in X_devel.index:
     
 # TF_IDF FOR BOTH
 from sklearn.feature_extraction.text import TfidfVectorizer
-vectorizer = TfidfVectorizer(max_features=4000, min_df = 10, max_df = 0.6, stop_words = stopwords.words('english'))
+vectorizer = TfidfVectorizer(max_features=2000, min_df = 10, max_df = 0.6, stop_words = stopwords.words('english'),  ngram_range=(1, 3))
 X_train = vectorizer.fit_transform(X_train["text"])
-
 
 # Training the classifier
 from sklearn.linear_model import LogisticRegression
@@ -57,12 +56,14 @@ classifier.fit(X_train, y_train)
 
 # Fitting devel to tf-idf model
 X_devel = vectorizer.transform(X_devel["text"])
-text_rank_pred = classifier.predict(X_devel)
+devel_pred_y = classifier.predict(X_devel)
 
 # Confusion Matrix
 from sklearn.metrics import confusion_matrix
-cm = confusion_matrix(text_rank_pred, y_devel)
+cm = confusion_matrix(devel_pred_y, y_devel)
 
 from sklearn.metrics import f1_score
-micro_f_score = f1_score(y_devel, text_rank_pred, average='micro')
-#micro f-score = 0.6991
+micro_f_score = f1_score(y_devel, devel_pred_y, average='micro')
+#micro f-score = 0.70
+
+
