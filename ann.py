@@ -152,12 +152,26 @@ r = model.fit(
 
 
 print('Devel preprocessing...')
-devel_data = pd.read_csv('TW_ST_2/train.txt', delimiter= "\t", names = column_names)
+devel_data = pd.read_csv('TW_ST_2/devel.txt', delimiter= "\t", names = column_names)
+y_devel = devel_data['rank']
 devel_sentences = devel_data["text"].fillna("DUMMY_VALUE").values
 devel_sequences = tokenizer.texts_to_sequences(devel_sentences)
 # pad sequences so that we get a N x T matrix
 devel_padded_data = pad_sequences(devel_sequences, maxlen=MAX_SEQUENCE_LENGTH)
-devel_pred_y = model.predict(devel_padded_data)
+devel_pred_categorical_y = model.predict(devel_padded_data)
  
-for row in devel_pred_y:
-   print(max(row)) 
+
+devel_pred_y = []
+for row in devel_pred_categorical_y:
+#    np.amax(row)
+    indices = np.where(row == row.max())
+#    print(max(row), "index of the row: ", indices[0][0])
+    devel_pred_y.append(indices[0][0]+1)
+
+    
+# Confusion Matrix
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(devel_pred_y, y_devel)
+
+from sklearn.metrics import f1_score
+micro_f_score = f1_score(y_devel, devel_pred_y, average='micro')
