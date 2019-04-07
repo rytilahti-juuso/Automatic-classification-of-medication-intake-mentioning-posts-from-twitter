@@ -2,23 +2,17 @@
 
 # -*- coding: utf-8 -*-
 #https://realpython.com/python-keras-text-classification/#defining-a-baseline-model
-
-from __future__ import print_function, division
-from builtins import range
 # Note: you may need to update your version of future
 # sudo pip install -U future
 
 import os
-import sys
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.layers import Dense, Input, Flatten
-from keras.layers import Conv1D, MaxPooling1D, Embedding
+from keras.layers import Embedding
 from keras.models import Model
-from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelEncoder
 from keras.utils import np_utils
 
@@ -115,17 +109,8 @@ embedding_layer = Embedding(
   trainable=False
 )
 
-
-
-
-
 print('Building model...')
 
-#model = Sequential()
-#model.add(Embedding(1000, 64, input_length=10))
-
-
-# train a 1D convnet with global maxpooling
 input_ = Input(shape=(MAX_SEQUENCE_LENGTH,))
 x = embedding_layer(input_)
 x = Dense(128, activation='relu')(x)
