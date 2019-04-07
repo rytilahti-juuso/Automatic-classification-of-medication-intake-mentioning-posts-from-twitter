@@ -8,12 +8,16 @@
 import os
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.layers import Dense, Input, Flatten
+from keras.wrappers.scikit_learn import KerasClassifier
+from keras.layers import Dense, Input, Flatten, Dropout
 from keras.layers import Embedding
 from keras.models import Model
+from keras.models import Sequential
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import GridSearchCV
 from keras.utils import np_utils
 
 os.chdir(r'C:\Users\The Risk Chief\Documents\GitHub\Automatic-classification-of-medication-intake-mentioning-posts-from-twitter')
@@ -22,7 +26,7 @@ os.chdir(r'C:\Users\The Risk Chief\Documents\GitHub\Automatic-classification-of-
 # some configuration
 MAX_SEQUENCE_LENGTH = 100
 MAX_VOCAB_SIZE = 20000
-EMBEDDING_DIM = 100
+EMBEDDING_DIM = 300
 VALIDATION_SPLIT = 0.2
 BATCH_SIZE = 128
 EPOCHS = 10
@@ -106,15 +110,51 @@ embedding_layer = Embedding(
   EMBEDDING_DIM,
   weights=[embedding_matrix],
   input_length=MAX_SEQUENCE_LENGTH,
-  trainable=False
+  trainable=True
 )
 
+
+# sequential model
+def create_model(optimizer):
+    model = Sequential()
+    model.add(embedding_layer)
+    model.add(Dense(128, activation='relu'))
+    model.add(Flatten(data_format=None))
+    model.add(Dense(3, activation='softmax'))
+    # Compile model
+    model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+    return model
+###########################################################################    
+model = create_model('adam')    
+r = model.fit(
+  train_padded_data,
+  dummy_y,
+  batch_size=256,
+  epochs=20,
+  validation_split=VALIDATION_SPLIT
+) 
+
+
+model = KerasClassifier(build_fn=create_model, verbose=0)
+ # define the grid search parameters
+batch_size = [64 ,128, 256]
+epochs = [5, 10, 15, 20]
+optimizer = ['adam', 'rmsprop']
+param_grid = dict(batch_size=batch_size, epochs=epochs, optimizer = optimizer)
+grid = GridSearchCV(estimator=model, param_grid=param_grid)
+grid_result = grid.fit(train_padded_data, dummy_y)
+# summarize results
+print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+means = grid_result.cv_results_['mean_test_score']
+stds = grid_result.cv_results_['std_test_score']
+params = grid_result.cv_results_['params']
+ 
 print('Building model...')
 
 input_ = Input(shape=(MAX_SEQUENCE_LENGTH,))
 x = embedding_layer(input_)
-x = Dense(128, activation='relu')(x)
-x = Dense(128, activation='relu')(x)
+x = Dense(64, activation='relu')(x)
+x = Dense(32, activation='relu')(x)
 x = (Flatten())(x)
 output = Dense(3, activation='softmax')(x)
 
@@ -127,6 +167,7 @@ model.compile(
 )
 
 print('Training model...')
+
 r = model.fit(
   train_padded_data,
   dummy_y,
@@ -134,6 +175,19 @@ r = model.fit(
   epochs=EPOCHS,
   validation_split=VALIDATION_SPLIT
 )
+
+# plot some data
+plt.plot(r.history['loss'], label='loss')
+plt.plot(r.history['val_loss'], label='val_loss')
+plt.legend()
+plt.show()
+
+# accuracies
+plt.plot(r.history['acc'], label='acc')
+plt.plot(r.history['val_acc'], label='val_acc')
+plt.legend()
+plt.show()
+
 
 
 print('Devel preprocessing...')
