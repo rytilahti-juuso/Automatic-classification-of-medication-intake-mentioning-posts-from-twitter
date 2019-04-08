@@ -28,9 +28,8 @@ MAX_SEQUENCE_LENGTH = 100
 MAX_VOCAB_SIZE = 20000
 EMBEDDING_DIM = 300
 VALIDATION_SPLIT = 0.2
-BATCH_SIZE = 128
-EPOCHS = 10
-
+BATCH_SIZE = 256
+EPOCHS = 15
 # load in pre-trained word vectors
 print('Loading word vectors...')
 word2vec = {}
@@ -118,7 +117,7 @@ embedding_layer = Embedding(
 def create_model(optimizer):
     model = Sequential()
     model.add(embedding_layer)
-    model.add(Dense(128, activation='relu'))
+    model.add(Dense(64, activation='relu'))
     model.add(Flatten(data_format=None))
     model.add(Dense(3, activation='softmax'))
     # Compile model
@@ -154,7 +153,6 @@ print('Building model...')
 input_ = Input(shape=(MAX_SEQUENCE_LENGTH,))
 x = embedding_layer(input_)
 x = Dense(64, activation='relu')(x)
-x = Dense(32, activation='relu')(x)
 x = (Flatten())(x)
 output = Dense(3, activation='softmax')(x)
 
@@ -162,7 +160,7 @@ model = Model(input_, output)
 
 model.compile(
   loss='categorical_crossentropy',
-  optimizer='rmsprop',
+  optimizer='adam',
   metrics=['accuracy']
 )
 

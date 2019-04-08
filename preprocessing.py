@@ -1,33 +1,28 @@
-# -*- coding: utf-8 -*-
-#https://realpython.com/python-keras-text-classification/#defining-a-baseline-model
-
-from __future__ import print_function, division
-from builtins import range
-# Note: you may need to update your version of future
-# sudo pip install -U future
-
 import os
-import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.layers import Dense, Input, GlobalMaxPooling1D
-from keras.layers import Conv1D, MaxPooling1D, Embedding
+from keras.wrappers.scikit_learn import KerasClassifier
+from keras.layers import Dense, Input, Flatten, Dropout
+from keras.layers import Embedding
 from keras.models import Model
-from sklearn.metrics import roc_auc_score
+from keras.models import Sequential
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import GridSearchCV
+from keras.utils import np_utils
 
 os.chdir(r'C:\Users\The Risk Chief\Documents\GitHub\Automatic-classification-of-medication-intake-mentioning-posts-from-twitter')
 
 
 # some configuration
-MAX_SEQUENCE_LENGTH = 100
+MAX_SEQUENCE_LENGTH = 50
 MAX_VOCAB_SIZE = 20000
-EMBEDDING_DIM = 100
-BATCH_SIZE = 128
-EPOCHS = 10
-
+EMBEDDING_DIM = 300
+VALIDATION_SPLIT = 0.2
+BATCH_SIZE = 256
+EPOCHS = 15
 # load in pre-trained word vectors
 print('Loading word vectors...')
 word2vec = {}
@@ -53,7 +48,12 @@ sentences = data["text"].fillna("DUMMY_VALUE").values
 X_train = formatted_data.loc[:,["text",]].values
 y_train = formatted_data.loc[:,["rank",]]
 
-
+# encode class values as integers
+encoder = LabelEncoder()
+encoder.fit(y_train)
+encoded_Y = encoder.transform(y_train)
+# convert integers to dummy variables (i.e. one hot encoded)
+dummy_y = np_utils.to_categorical(encoded_Y)
 
 # convert the sentences (strings) into integers
 tokenizer = Tokenizer(num_words=MAX_VOCAB_SIZE)
@@ -74,8 +74,8 @@ print('Found %s unique tokens.' % len(word2idx))
 
 
 # pad sequences so that we get a N x T matrix
-datas = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
-print('Shape of data tensor:', datas.shape)
+train_padded_data = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
+print('Shape of data tensor:', train_padded_data.shape)
 
 
 
@@ -102,7 +102,6 @@ embedding_layer = Embedding(
   EMBEDDING_DIM,
   weights=[embedding_matrix],
   input_length=MAX_SEQUENCE_LENGTH,
-  trainable=False
+  trainable=True
 )
-
 
