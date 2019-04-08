@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.wrappers.scikit_learn import KerasClassifier
-from keras.layers import Dense, Input, Flatten, Dropout
+from keras.layers import Dense, Input, Flatten, Dropout, Conv1D, GlobalMaxPooling1D
 from keras.layers import Embedding
 from keras.models import Model
 from keras.models import Sequential
@@ -90,13 +90,13 @@ def create_embedding_layer(embedding_matrix):
       trainable=False
     )
 
-def create_model():
+def create_model(embedding_layer):
     input_ = Input(shape=(MAX_SEQUENCE_LENGTH,))
     x = embedding_layer(input_)
     x = Conv1D(128, 3, activation='relu')(x)
     x = GlobalMaxPooling1D()(x)
     x = Dense(128, activation='relu')(x)
-    output = Dense(3), activation='softmax')(x)
+    output = Dense(3, activation='softmax')(x)
     
     model = Model(input_, output)
     model.compile(
@@ -104,7 +104,8 @@ def create_model():
       optimizer='adam',
       metrics=['accuracy']
     )
-    return model    
+    return model
+    
 def main():
     word2vec = load_word2vec(EMBEDDING_DIM)
     print('Loading in comments...')    
