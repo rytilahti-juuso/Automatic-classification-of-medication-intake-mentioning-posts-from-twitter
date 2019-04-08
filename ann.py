@@ -24,7 +24,7 @@ os.chdir(r'C:\Users\The Risk Chief\Documents\GitHub\Automatic-classification-of-
 
 
 # some configuration
-MAX_SEQUENCE_LENGTH = 100
+MAX_SEQUENCE_LENGTH = 50
 MAX_VOCAB_SIZE = 20000
 EMBEDDING_DIM = 300
 VALIDATION_SPLIT = 0.2
@@ -123,16 +123,6 @@ def create_model(optimizer):
     # Compile model
     model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
     return model
-###########################################################################    
-model = create_model('adam')    
-r = model.fit(
-  train_padded_data,
-  dummy_y,
-  batch_size=256,
-  epochs=20,
-  validation_split=VALIDATION_SPLIT
-) 
-
 
 model = KerasClassifier(build_fn=create_model, verbose=0)
  # define the grid search parameters
