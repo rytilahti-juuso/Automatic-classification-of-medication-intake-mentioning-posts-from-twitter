@@ -47,18 +47,27 @@ def encode_rank_return_one_hot_encoded(categorical_values):
     dummy_categorical_values = np_utils.to_categorical(encoded_categorical_values)
     return dummy_categorical_values
 
+
+def create_tokenizer(documents):
+        tokenizer = Tokenizer(num_words=MAX_VOCAB_SIZE)
+        tokenizer.fit_on_texts(documents)
+        return tokenizer    
+    
 # convert the sentences (strings) into integers
-def text_to_int(documents):
-    tokenizer = Tokenizer(num_words=MAX_VOCAB_SIZE)
-    tokenizer.fit_on_texts(documents)
+def text_to_padded_data(documents, tokenizer):
     sequences = tokenizer.texts_to_sequences(documents)
     print("max sequence length:", max(len(s) for s in sequences))
     print("min sequence length:", min(len(s) for s in sequences))
     s = sorted(len(s) for s in sequences)
     print("median sequence length:", s[len(s) // 2])
-    return sequences
-
+    padded_data = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
+    return padded_data
     
+def word2index(tokenizer):
+    word2idx =tokenizer.word_index 
+    print('Found %s unique tokens.' % len(word2idx))
+    return word2idx
+
 def main():
     load_word2vec(EMBEDDING_DIM)
     print('Loading in comments...')    
@@ -66,6 +75,12 @@ def main():
     data = pd.read_csv('TW_ST_2/train.txt', delimiter= "\t", names = column_names)
     documents = data["text"].fillna("DUMMY_VALUE").values
     rank_hot_encoded = encode_rank_return_one_hot_encoded(data["rank"].values)
-    sequences = text_to_int(documents)
+    tokenizer = create_tokenizer(documents)
+    word2idx = word2index(tokenizer)
+    text_to_padded_data(documents, tokenizer)
+    
+
+    
+    
     
 main()
