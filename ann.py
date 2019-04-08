@@ -109,7 +109,7 @@ embedding_layer = Embedding(
   EMBEDDING_DIM,
   weights=[embedding_matrix],
   input_length=MAX_SEQUENCE_LENGTH,
-  trainable=True
+  trainable=False
 )
 
 

@@ -68,8 +68,45 @@ def word2index(tokenizer):
     print('Found %s unique tokens.' % len(word2idx))
     return word2idx
 
+def create_embedding_matrix(word2idx,word2vec):        
+    # prepare embedding matrix
+    print('Filling pre-trained embeddings...')
+    num_words = min(MAX_VOCAB_SIZE, len(word2idx) + 1)
+    embedding_matrix = np.zeros((num_words, EMBEDDING_DIM))
+    for word, i in word2idx.items():
+      if i < MAX_VOCAB_SIZE:
+        embedding_vector = word2vec.get(word)
+        if embedding_vector is not None:
+          # words not found in embedding index will be all zeros.
+          embedding_matrix[i] = embedding_vector
+    return embedding_matrix
+    
+def create_embedding_layer(embedding_matrix):    
+    embedding_layer = Embedding(
+      num_words,
+      EMBEDDING_DIM,
+      weights=[embedding_matrix],
+      input_length=MAX_SEQUENCE_LENGTH,
+      trainable=False
+    )
+
+def create_model():
+    input_ = Input(shape=(MAX_SEQUENCE_LENGTH,))
+    x = embedding_layer(input_)
+    x = Conv1D(128, 3, activation='relu')(x)
+    x = GlobalMaxPooling1D()(x)
+    x = Dense(128, activation='relu')(x)
+    output = Dense(3), activation='softmax')(x)
+    
+    model = Model(input_, output)
+    model.compile(
+      loss='categorical_crossentropy',
+      optimizer='adam',
+      metrics=['accuracy']
+    )
+    return model    
 def main():
-    load_word2vec(EMBEDDING_DIM)
+    word2vec = load_word2vec(EMBEDDING_DIM)
     print('Loading in comments...')    
     column_names = ["tweet_id", "name", "train_id", "rank", "text"]
     data = pd.read_csv('TW_ST_2/train.txt', delimiter= "\t", names = column_names)
@@ -78,6 +115,8 @@ def main():
     tokenizer = create_tokenizer(documents)
     word2idx = word2index(tokenizer)
     text_to_padded_data(documents, tokenizer)
+    embedding_matrix = create_embedding_matrix(word2idx, word2vec)
+    embedding_layer = create_embedding_layer(embedding_matrix)
     
 
     
