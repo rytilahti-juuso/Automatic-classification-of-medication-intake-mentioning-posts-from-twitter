@@ -14,6 +14,7 @@ from keras.models import Sequential
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import GridSearchCV
 from keras.utils import np_utils
+from sklearn.metrics import f1_score
 
 os.chdir(r'C:\Users\The Risk Chief\Documents\GitHub\Automatic-classification-of-medication-intake-mentioning-posts-from-twitter')
 MAX_SEQUENCE_LENGTH = 50
@@ -98,12 +99,13 @@ def create_embedding_layer(embedding_matrix):
       input_length=MAX_SEQUENCE_LENGTH,
       trainable=False
     )
+    return embedding_layer
 
 def create_model():
     embedding_layer = create_embedding_layer(embedding_matrix)
     input_ = Input(shape=(MAX_SEQUENCE_LENGTH,))
     x = embedding_layer(input_)
-    x = Conv1D(128, 3, activation='relu')(x)
+    x = Conv1D(filters = 128, kernel_size = 3, activation='relu')(x)
     x = GlobalMaxPooling1D()(x)
     x = Dense(128, activation='relu')(x)
     output = Dense(3, activation='softmax')(x)
@@ -124,24 +126,26 @@ def main():
     train_data = pd.read_csv('TW_ST_2/train.txt', delimiter= "\t", names = column_names)
     train_documents = train_data["text"].fillna("DUMMY_VALUE").values
     train_rank_hot_encoded = encode_rank_return_one_hot_encoded(train_data["rank"].values)
+    tokenizer = create_tokenizer(train_documents)
     train_padded = text_to_padded_data(train_documents, tokenizer)
 #    Devel data import and preprocessing
     devel_data = pd.read_csv('TW_ST_2/devel.txt', delimiter= "\t", names = column_names)
     devel_documents = devel_data["text"].fillna("DUMMY_VALUE").values
+    devel_rank = devel_data["rank"].fillna("DUMMY_VALUE").values
     devel_rank_hot_encoded = encode_rank_return_one_hot_encoded(devel_data["rank"].values)
-    devel_padded = text_to_padded_data(devel_documents, tokenizer)
-    tokenizer = create_tokenizer(documents)
+    devel_padded_data = text_to_padded_data(devel_documents, tokenizer)
     word2idx = word2index(tokenizer)    
     embedding_matrix = create_embedding_matrix(word2idx, word2vec)
 #    Model creation and usage
     model = create_model()
-    model = model.fit(train_padded,
+    history = model.fit(train_padded,
                              train_rank_hot_encoded,
                              batch_size=BATCH_SIZE,
                              epochs=EPOCHS,
                              validation_split=VALIDATION_SPLIT)
     devel_pred_rank = predictions_to_array(model)
-    
+    micro_f_score = f1_score(devel_rank, devel_pred_rank, average='micro')
+    print("Micro f-score " , micro_f_score)
     
     
     
