@@ -23,6 +23,15 @@ VALIDATION_SPLIT = 0.2
 BATCH_SIZE = 256
 EPOCHS = 15
 
+# returns array with predictions, each row has only the most likely one rank number instead of one hot encoded
+def predictions_to_array(model):
+    devel_pred_categorical_rank = model.predict(devel_padded_data)
+    devel_pred_rank = []
+    for row in devel_pred_categorical_rank:
+        indices = np.where(row == row.max())
+    #    print(max(row), "index of the row: ", indices[0][0])
+        devel_pred_rank.append(indices[0][0]+1)
+    return devel_pred_rank
 
 def load_word2vec(EMBEDDING_DIM):
     print('Loading word vectors...')
@@ -90,7 +99,8 @@ def create_embedding_layer(embedding_matrix):
       trainable=False
     )
 
-def create_model(embedding_layer):
+def create_model():
+    embedding_layer = create_embedding_layer(embedding_matrix)
     input_ = Input(shape=(MAX_SEQUENCE_LENGTH,))
     x = embedding_layer(input_)
     x = Conv1D(128, 3, activation='relu')(x)
@@ -110,16 +120,29 @@ def main():
     word2vec = load_word2vec(EMBEDDING_DIM)
     print('Loading in comments...')    
     column_names = ["tweet_id", "name", "train_id", "rank", "text"]
-    data = pd.read_csv('TW_ST_2/train.txt', delimiter= "\t", names = column_names)
-    documents = data["text"].fillna("DUMMY_VALUE").values
-    rank_hot_encoded = encode_rank_return_one_hot_encoded(data["rank"].values)
+#   train data import and preprocessing
+    train_data = pd.read_csv('TW_ST_2/train.txt', delimiter= "\t", names = column_names)
+    train_documents = train_data["text"].fillna("DUMMY_VALUE").values
+    train_rank_hot_encoded = encode_rank_return_one_hot_encoded(train_data["rank"].values)
+    train_padded = text_to_padded_data(train_documents, tokenizer)
+#    Devel data import and preprocessing
+    devel_data = pd.read_csv('TW_ST_2/devel.txt', delimiter= "\t", names = column_names)
+    devel_documents = devel_data["text"].fillna("DUMMY_VALUE").values
+    devel_rank_hot_encoded = encode_rank_return_one_hot_encoded(devel_data["rank"].values)
+    devel_padded = text_to_padded_data(devel_documents, tokenizer)
     tokenizer = create_tokenizer(documents)
-    word2idx = word2index(tokenizer)
-    text_to_padded_data(documents, tokenizer)
+    word2idx = word2index(tokenizer)    
     embedding_matrix = create_embedding_matrix(word2idx, word2vec)
-    embedding_layer = create_embedding_layer(embedding_matrix)
+#    Model creation and usage
+    model = create_model()
+    model = model.fit(train_padded,
+                             train_rank_hot_encoded,
+                             batch_size=BATCH_SIZE,
+                             epochs=EPOCHS,
+                             validation_split=VALIDATION_SPLIT)
+    devel_pred_rank = predictions_to_array(model)
     
-
+    
     
     
     
